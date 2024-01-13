@@ -1,3 +1,6 @@
+import random
+import string
+
 def read_file_to_array(path):
     """
     Lee un archivo de texto desde la ruta dada, convierte cada línea a minúsculas 
@@ -11,3 +14,13 @@ def read_file_to_array(path):
             return [line.strip().lower() for line in file]
     except Exception as e:
         return str(e)
+
+
+def generate_random_id(length=12):
+    # Define the characters that can be used in the ID
+    characters = string.ascii_letters + string.digits  # This includes both letters and numbers
+
+    # Generate a random string of the specified length
+    random_id = ''.join(random.choice(characters) for _ in range(length))
+    
+    return random_id

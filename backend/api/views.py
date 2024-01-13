@@ -2,9 +2,6 @@
 import random
 import os
 import traceback
-from api.utils.text_analysis import TextAnalysisEngine
-from api.utils.audio_converter import audio_converter
-
 
 # Framework
 from rest_framework.response import Response
@@ -50,9 +47,13 @@ from api.constants import AppMsg
 import logging
 from openai import OpenAI
 
+# Custom
+from api.utils.thresholds import easy, moderate, hard
+from api.utils.helpers import generate_random_id
+from api.utils.text_analyzer import TextAnalyzer
+from api.utils.audio_converter import AudioConverter
 
 logger = logging.getLogger('api_v1')
-test_user_id = 1
 appMsg = AppMsg()
 
 
@@ -380,34 +381,56 @@ def set_questions_config(request):
 
 @api_view(['GET'])
 def hola(request):
+    logger.info('heeey hooola')
     return Response({
         'hola': 'hoooooooola',
     }, status=status.HTTP_200_OK)
 
 
-text_engine = TextAnalysisEngine('')
+text_engine = TextAnalyzer()
 
 
 @api_view(['POST'])
 def text_analyzer(request):
-
-    default = "Taking salsa dancing classes is not only a fun way to learn a new skill but also a lively social activity and a great workout."
-    text = request.POST.get('text', default)
-    text_engine.text = text
-
+    reqID = generate_random_id()
+    logger.info(f'ReqID={reqID} | Text analyzer initiated')
+    
     try:
-        return Response({
+        default = "Taking salsa dancing classes is not only a fun way to learn a new skill but also a lively social activity and a great workout."
+        text = request.POST.get('text', default)
+        text_engine.text = text        
+        logger.info(f'ReqID={reqID} | Text received for analysis')
+
+        text_engine.reqID = reqID
+
+        difficulty = request.POST.get('difficulty', 'moderate')
+        thresholds = moderate
+
+        if difficulty == 'easy':
+            thresholds = easy
+            logger.info(f'ReqID={reqID} | Difficulty level set to easy')
+
+        if difficulty == 'hard':
+            thresholds = hard
+            logger.info(f'ReqID={reqID} | Difficulty level set to hard')
+
+        text_engine.thresholds = thresholds
+
+        response_data = {
             'text': text,
             'creativity': text_engine.check_creativity(),
             'phrasal_verb': text_engine.detect_phrasal_verbs(),
             'vocabulary': text_engine.check_vocabulary(),
             'long_talk': text_engine.check_long_talk(),
-            'short_talk': text_engine.check_short_talk(),
-        }, status=status.HTTP_200_OK)
+        }
+
+        logger.info(f'ReqID={reqID} | Text analysis complete, sending response')
+        return Response(response_data, status=status.HTTP_200_OK)
+
     except Exception as error:
-        return Response({
-            'message': str(error),
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        error_msg = traceback.format_exc()
+        logger.error(f'ReqID={reqID} | Error in text_analyzer: {error_msg}')
+        return Response({'message': str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def speechToText(audio_file_path):
@@ -423,26 +446,52 @@ def speechToText(audio_file_path):
 
 @api_view(['POST'])
 def audio_analyzer(request):
-    audio_file = request.FILES.get('audio')
+    reqID = generate_random_id()
+    logger.info(f'ReqID={reqID} | Audio analyzer initiated')
 
-    if audio_file is None:
-        return Response({'message': 'No audio file provided'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        audio_file = request.FILES.get('audio')
 
-    audio_path, duration_seconds = audio_converter(audio_file)
+        if audio_file is None:
+            logger.warning(f'ReqID={reqID} | No audio file provided in the request')
+            return Response({'message': 'No audio file provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    text = speechToText(audio_path)
-    text_engine.text = text
+        logger.info(f'ReqID={reqID} | Converting audio file to text')        
+        audio = AudioConverter()
+        audio_path, duration_seconds = audio.convert(audio_file)
 
-    return Response({
-        'text': text,
-        'duration_seconds': duration_seconds,
-        'creativity': text_engine.check_creativity(),
-        'phrasal_verb': text_engine.detect_phrasal_verbs(),
-        'vocabulary': text_engine.check_vocabulary(),
-        'long_talk': text_engine.check_long_talk(),
-        'fluency': text_engine.check_fluency(duration_seconds),
-        'short_talk': text_engine.check_short_talk(),
-    }, status=status.HTTP_200_OK)
+        text = speechToText(audio_path)
+        text_engine.text = text
 
-    # except Exception as e:
-    #     return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        text_engine.reqID = reqID
+
+        difficulty = request.POST.get('difficulty', 'moderate')
+        thresholds = moderate
+
+        if difficulty == 'easy':
+            thresholds = easy
+            logger.info(f'ReqID={reqID} | Difficulty level set to easy')
+
+        if difficulty == 'hard':
+            thresholds = hard
+            logger.info(f'ReqID={reqID} | Difficulty level set to hard')
+
+        text_engine.thresholds = thresholds
+
+        response_data = {
+            'text': text,
+            'duration_seconds': duration_seconds,
+            'creativity': text_engine.check_creativity(),
+            'phrasal_verb': text_engine.detect_phrasal_verbs(),
+            'vocabulary': text_engine.check_vocabulary(),
+            'long_talk': text_engine.check_long_talk(),
+            'fluency': text_engine.check_fluency(duration_seconds),
+        }
+
+        logger.info(f'ReqID={reqID} | Analysis complete, sending response')
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except Exception as err:
+        error_msg = traceback.format_exc()
+        logger.error(f'ReqID={reqID} | Error in audio_analyzer: {error_msg}')
+        return Response({'message': str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
