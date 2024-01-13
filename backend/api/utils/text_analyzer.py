@@ -92,10 +92,10 @@ class TextAnalyzer:
 
             verb, particle = parts
             verb_forms = get_word_forms(verb)
-            forms = [form + ' ' + particle for form in verb_forms['v']]
+            forms = [verb_form + r'( \w+)? ' + particle for verb_form in verb_forms['v']]
 
             for form in forms:
-                if re.search(r'\b' + re.escape(form) + r'\b', text):
+                if re.search(r'\b' + form + r'\b', text):
                     found_verbs.append(pv)
                     logger.info(f'ReqID={self.reqID} | Detected phrasal verb: "{pv}" in text')
                     break
@@ -116,7 +116,10 @@ class TextAnalyzer:
 
         text_length = len(self.text)
         fluency_rate = text_length / duration_seconds
-        threshold = self.thresholds['fluency']
+        threshold = self.thresholds['fluency_short']
+        
+        if(text_length > 170):
+            threshold = self.thresholds['fluency_long']        
 
         logger.info(f'ReqID={self.reqID} | Calculated fluency rate: {fluency_rate} (Length: {text_length}, Duration: {duration_seconds}s, Threshold: {threshold})')
 
