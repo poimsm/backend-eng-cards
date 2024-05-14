@@ -45,9 +45,11 @@ DJANGO_APPS = [
 ]
 
 PROJECT_APPS = [
-    'api',
+    'common',
     'users',
-    'global',
+    'global_settings',
+    'devices',
+    'cards',
 ]
 
 THIRD_PARTY_APPS = [
@@ -71,7 +73,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware'
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'common.middleware.AppVersionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -151,13 +154,8 @@ STATIC_URL = 'static/'
 MEDIA_ROOT = '/media/'
 MEDIA_URL = 'media/'
 
-if DEBUG:
-    SITE_DOMAIN = 'http://192.168.0.4'
-else:
-    SITE_DOMAIN = 'http://165.227.224.105'
-
-API_VERSION = 'v1'
-BASE_URL = SITE_DOMAIN + '/api/' + API_VERSION
+SITE_DOMAIN = os.getenv('SITE_DOMAIN')
+API_URL = SITE_DOMAIN + '/api/v1'
 
 
 # Default primary key field type

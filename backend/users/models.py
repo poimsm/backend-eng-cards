@@ -1,6 +1,8 @@
 # Django
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from common.models import BaseModel
 
 
 class UserManager(BaseUserManager):
@@ -92,7 +94,6 @@ class User(AbstractBaseUser):
         # "Is the user active?"
         return self.active
 
-
 # class User(AbstractUser):
 #     created = models.DateTimeField(auto_now_add=True)
 #     updated = models.DateTimeField(auto_now=True)
@@ -108,3 +109,28 @@ class User(AbstractBaseUser):
 #     USERNAME_FIELD = 'email'
 
 #     REQUIRED_FIELDS = []
+
+
+User = get_user_model()
+
+
+class History(BaseModel):
+    total_uses = models.PositiveSmallIntegerField(default=0)
+    last_time_used = models.DateTimeField()
+    question_id = models.IntegerField(null=False, blank=False)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    objects = models.Manager()
+
+
+class Profile(BaseModel):
+    verified = models.BooleanField(default=False)
+    screen_flow = models.BooleanField(default=False)
+    email = models.CharField(max_length=150, blank=False, null=False)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
+    objects = models.Manager()
