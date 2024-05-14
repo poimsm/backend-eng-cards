@@ -8,7 +8,7 @@ from devices.models import (
 
 
 def create_device():
-    device = Device(id='7e9061f1-862a-4910-8d20-e3eb8614c21c')
+    device = Device()
     device.save()
     Profile(device=device).save()
     return device.id
