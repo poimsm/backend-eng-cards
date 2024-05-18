@@ -8,5 +8,5 @@ source ./bin/commands.sh
 
 CMD_PREFIX=$(detectar_os)
 
-${CMD_PREFIX} -f docker-compose.base.yml -f docker-compose.$1.yml up -d
+${CMD_PREFIX} docker-compose -f docker-compose.base.yml -f docker-compose.$1.yml up -d
 echo 'Server up'
