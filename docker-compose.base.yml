@@ -19,9 +19,7 @@ services:
     build:
       context: ./nginx
       args:
-        ENV_CONF: ${NGINX_CONF}   
-    ports:
-      - "80:80"
+        ENV_CONF: ${NGINX_CONF}    
     depends_on:
       - django_gunicorn
     networks:

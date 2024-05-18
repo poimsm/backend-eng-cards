@@ -11,6 +11,9 @@ services:
       - ./certs:/etc/ssl/certs:ro
       - static:/static
       - ./media:/media
+    ports:
+      - "443:443"
+      - "80:80"
 
   postgres:
     volumes:

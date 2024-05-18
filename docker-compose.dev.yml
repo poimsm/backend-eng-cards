@@ -10,6 +10,8 @@ services:
     volumes:
       - static:/static
       - ./media:/media
+    ports:
+      - "80:80"
 
   postgres:
     volumes:
