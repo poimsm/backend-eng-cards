@@ -3,13 +3,20 @@
 # Define el nombre de tu contenedor Django
 CONTAINER_NAME=card_django
 
+# Verifica si se pasó el argumento --force
+if [[ " $* " =~ " --force " ]]; then
+    FORCE_FLAG="--force"
+else
+    FORCEFLAG=""
+fi
+
 # Define los comandos de Django que quieres ejecutar dentro del contenedor
 COMMANDS=(
     "python manage.py makemigrations"
     "python manage.py migrate"
-    "python manage.py populate_cards"
-    "python manage.py populate_stickers"
-    "python manage.py populate_settings"
+    "python manage.py populate_cards $FORCE_FLAG"
+    "python manage.py populate_stickers $FORCE_FLAG"
+    "python manage.py populate_settings $FORCE_FLAG"
 )
 
 # Detectar el sistema operativo y preparar el prefijo del comando

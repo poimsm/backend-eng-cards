@@ -3,10 +3,6 @@ version: '3.7'
 services:
   django_gunicorn:
     container_name: card_django
-    volumes:
-      - static:/static
-      # - media:/app/media
-      - ./backend:/app
     env_file:
       - .env
     build:
@@ -20,10 +16,10 @@ services:
 
   nginx:
     container_name: card_nginx
-    build: ./nginx
-    volumes:
-      - static:/static
-      - ./media:/media
+    build:
+      context: ./nginx
+      args:
+        ENV_CONF: ${NGINX_CONF}   
     ports:
       - "80:80"
     depends_on:
@@ -36,8 +32,6 @@ services:
     container_name: card_postgres
     networks:
       - nginx_network
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}

@@ -143,3 +143,5 @@ GitHub.sublime-settings
 /backend/data
 /backend/audios
 /backend/models
+/nginx/prod.conf
+/certs
