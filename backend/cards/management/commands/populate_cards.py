@@ -28,7 +28,9 @@ class Command(BaseCommand):
 
         try:
             self.work_dir = 'data/populate'
-            self.delete_all_cards()
+            self.IMG_EXTENSION = 'jpg'
+            self.delete_all()
+            self.populate_categories()
             self.populate_cards()
             console.info('Done')
 
@@ -36,21 +38,68 @@ class Command(BaseCommand):
             traceback.print_exc()
             console.error('Process Failed!')
 
+    def populate_categories(self):
+        with transaction.atomic():
+            categories = read_JSON(f'{self.work_dir}/categories.json')
+
+            for category_data in categories:
+                self.create_category(category_data)
+
     def populate_cards(self):
         with transaction.atomic():
             categories = read_JSON(f'{self.work_dir}/categories.json')
 
             for category_data in categories:
-                self.create_category_and_cards(category_data)
+                self.create_cards(category_data)
 
-    def create_category_and_cards(self, category_data):
+    def create_category(self, category_data):
         console.info('Creating category: ' + category_data['name'])
+
+        category_code = category_data['code']        
+        cat_cards = read_JSON(f'{self.work_dir}/categories/{category_code}.json')
+
+        category_cards = []
+        for card in cat_cards:            
+            if card['type'] == 'basic_cards':
+                category_cards.append(card)
+
+            if card['type'] == 'cluster_cards':
+                category_cards.append(card)
+
+            if card['type'] == 'collection':
+                collections = []
+                for collec in card['collections']:
+                    collec_items = []
+                    for item in collec['items']:
+                        item_code = item['code']
+                        # item_code = '018V91TIgO'
+                        mini_url = self.create_url(f'mini/{item_code}.{self.IMG_EXTENSION}')
+                        collec_items.append({
+                            "mini_url": mini_url,
+                            "phrase": item['phrase'],
+                            "code": item_code,
+                        })
+
+                    collections.append({
+                        'title': collec['title'],
+                        'items': collec_items
+                    })
+
+                category_cards.append({
+                    'type': 'collections',
+                    'collections': collections,
+                })
+
         category = Category(
             name=category_data['name'],
             code=category_data['code'],
+            cards=category_cards,
             extras=category_data.get('extras', None),
         )
         category.save()
+
+    def create_cards(self, category_data):
+        category = Category.objects.get(code=category_data['code'])
 
         cards = read_JSON(f'{self.work_dir}/cards.json')
         cards = [card for card in cards if category_data['code']
@@ -65,10 +114,9 @@ class Command(BaseCommand):
                 self.create_cluster_card(category, card_data)
             card_counter += 1
 
-        console.info(f'Total cards created: {card_counter}')
+        console.info(f'Total cards created ({category.name}): {card_counter}')
 
     def create_basic_card(self, category, card_data):
-        IMG_EXTENSION = 'jpg'
         code = card_data['code']
         transl = f'{self.work_dir}/translations/basic'
         content = f'{self.work_dir}/content/basic'
@@ -85,14 +133,18 @@ class Command(BaseCommand):
         examples = []
 
         if examples_json:
-            ex_length = 3 if len(examples_json) > 0 else 0
+            if len(examples_json) >= 3:
+                ex_length = 3
+            else:
+                ex_length = len(examples_json)
+
             ex_length = ex_length if not card_data.get(
                 'allowed_examples', None) else card_data['allowed_examples']
 
             for i in range(ex_length):
                 examples.append({
                     'example': read_JSON(f'{transl}/examples/{code}_{i}.json'),
-                    'image_url': self.create_url(f'{media}/ex_imgs/{code}_{i}.{IMG_EXTENSION}')
+                    'image_url': self.create_url(f'{media}/ex_imgs/{code}_{i}.{self.IMG_EXTENSION}')
                 })
 
         # --------------- Scenarios ---------------------
@@ -112,7 +164,7 @@ class Command(BaseCommand):
                 scenario = sce
                 scenario['title'] = title_obj
                 scenario['answers'] = answers
-                scenario['image_url'] = self.create_url(f'{media}/sce_imgs/{code}_{i}.{IMG_EXTENSION}')
+                scenario['image_url'] = self.create_url(f'{media}/sce_imgs/{code}_{i}.{self.IMG_EXTENSION}')
                 scenarios.append(scenario)
 
         # --------------- Explanation ---------------------
@@ -163,8 +215,8 @@ class Command(BaseCommand):
         card = BasicCard(
             phrase=phrase,
             code=code,
-            image_url=self.create_url(f'{media}/imgs/{code}.{IMG_EXTENSION}'),
-            cover_url=self.create_url(f'{media}/covers/{code}.{IMG_EXTENSION}'),
+            image_url=self.create_url(f'{media}/imgs/{code}.{self.IMG_EXTENSION}'),
+            cover_url=self.create_url(f'{media}/covers/{code}.{self.IMG_EXTENSION}'),
             voice=voice,
             meaning=meaning,
             examples=self.return_list_or_none(examples),
@@ -173,15 +225,13 @@ class Command(BaseCommand):
             vocabs=self.return_list_or_none(vocab_list),
             compare=self.return_list_or_none(compare_list),
             visible=card_data['visible'],
-            status=1
+            status=1,
         )
         card.save()
 
         category.basic_cards.add(card)
 
     def create_cluster_card(self, category, card_data):
-
-        IMG_EXTENSION = 'jpg'
         card_code = card_data['code']
         content = f'{self.work_dir}/content/clusters'
         cluster = read_JSON(f'{content}/{card_code}.json')
@@ -190,8 +240,8 @@ class Command(BaseCommand):
         card = ClusterCard(
             title=card_data['title'],
             code=card_code,
-            image_url=self.create_url(f'{media}/imgs/{card_code}.{IMG_EXTENSION}'),
-            cover_url=self.create_url(f'{media}/covers/{card_code}.{IMG_EXTENSION}'),
+            image_url=self.create_url(f'{media}/imgs/{card_code}.{self.IMG_EXTENSION}'),
+            cover_url=self.create_url(f'{media}/covers/{card_code}.{self.IMG_EXTENSION}'),
             cluster=cluster,
             status=1
         )
@@ -199,7 +249,7 @@ class Command(BaseCommand):
 
         category.cluster_cards.add(card)
 
-    def delete_all_cards(self):
+    def delete_all(self):
         BasicCard.objects.all().delete()
         ClusterCard.objects.all().delete()
         Category.objects.all().delete()

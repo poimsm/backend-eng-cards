@@ -57,11 +57,14 @@ def get_english_text(obj_list):
     return english_text
 
 
-def get_cluster_card(card_id, lang_code):
-    card = ClusterCard.objects.get(
-        id=card_id,
-        status=StatusModel.ACTIVE,
-    )
+def get_cluster_card_by_code(code, lang_code):
+    try:
+        card = ClusterCard.objects.get(
+            code=code,
+            status=StatusModel.ACTIVE,
+        )
+    except ClusterCard.DoesNotExist:
+        return None
 
     return {
         'id': card.id,
@@ -70,11 +73,14 @@ def get_cluster_card(card_id, lang_code):
     }
 
 
-def get_basic_card(card_id, lang_code):
-    card = BasicCard.objects.get(
-        id=card_id,
-        status=StatusModel.ACTIVE,
-    )
+def get_basic_card_by_code(code, lang_code):
+    try:
+        card = BasicCard.objects.get(
+            code=code,
+            status=StatusModel.ACTIVE,
+        )
+    except BasicCard.DoesNotExist:
+        return None
 
     examples = []
     for example in card.examples or []:
@@ -135,11 +141,14 @@ def get_basic_card(card_id, lang_code):
     }
 
 
-def get_custom_card(card_id):
-    card = CustomCard.objects.get(
-        id=card_id,
-        status=StatusModel.ACTIVE,
-    )
+def get_custom_card_by_id(card_id):
+    try:
+        card = CustomCard.objects.get(
+            id=card_id,
+            status=StatusModel.ACTIVE,
+        )
+    except CustomCard.DoesNotExist:
+        return None
 
     sticker = Sticker.objects.get(code=card.sticker_code)
 
@@ -152,6 +161,33 @@ def get_custom_card(card_id):
         'meaning': card.meaning,
     }
 
+
+def get_cover_basic_card_by_code(code):
+    try:
+        card = BasicCard.objects.get(
+            code=code
+        )
+    except BasicCard.DoesNotExist:
+        return None
+    
+    return {
+        'code': code,
+        'phrase': get_english_text(card.phrase),
+        'cover_url': card.cover_url,
+    }
+
+def get_cover_cluster_card_by_code(code):
+    try:
+        card = ClusterCard.objects.get(
+            code=code
+        )
+    except ClusterCard.DoesNotExist:
+        return None
+    
+    return {
+        'code': code,
+        'cover_url': card.cover_url,
+    }
 
 def get_sticker_by_code(code):
     try:

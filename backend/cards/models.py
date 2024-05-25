@@ -52,7 +52,8 @@ class CustomCard(BaseModel):
 class Category(BaseModel):
     name = models.TextField()
     code = models.CharField(max_length=20)
-    extras = models.JSONField(blank=True, null=True)
+    cards = models.JSONField(blank=True, null=True)
     basic_cards = models.ManyToManyField(BasicCard)
     cluster_cards = models.ManyToManyField(ClusterCard)
+    extras = models.JSONField(blank=True, null=True)
     objects = models.Manager()

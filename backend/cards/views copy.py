@@ -32,12 +32,10 @@ from common.decorators import track_and_report
 # Services
 from cards.services import (
     get_english_text,
-    get_cluster_card_by_code,
-    get_basic_card_by_code,
-    get_custom_card_by_id,
+    get_cluster_card,
+    get_basic_card,
+    get_custom_card,
     get_sticker_by_code,
-    get_cover_basic_card_by_code,
-    get_cover_cluster_card_by_code,
 )
 
 from devices.services import (
@@ -172,6 +170,7 @@ def category_card_list_view(request):
     ).order_by('-id')
 
     processed_cards = []
+
     for card in custom_cards:
         sticker = Sticker.objects.get(
             code=card.sticker_code,
@@ -180,16 +179,14 @@ def category_card_list_view(request):
         processed_cards.append({
             'id': card.id,
             'phrase': card.phrase,
-            'cover_url': sticker.cover_url
+            'cover_url': sticker.cover_url,
+            'type': 'custom'
         })
 
     if len(processed_cards) > 0:
         category_cards_list.append({
             'category': 'Saved',
-            'blocks': [{
-                'type': 'custom_cards',
-                'custom_cards': processed_cards
-            }]
+            'cards': processed_cards
         })
 
     categories = Category.objects.filter(status=StatusModel.ACTIVE)
@@ -201,71 +198,100 @@ def category_card_list_view(request):
             if cat.code == sort_code:
                 sorted_categories.append(cat)
 
-    logger.info([cat.name for cat in sorted_categories])
-
     for category in sorted_categories:
-        cat_cards = []
-        for cat_item in category.cards:            
-            if cat_item['type'] == 'basic_cards':
-                basic_cards = []
-                for code in cat_item['card_codes']:
-                    card = get_cover_basic_card_by_code(code)
-                    basic_cards.append(card)
-                cat_cards.append({
-                    'type': 'basic_cards',
-                    'basic_cards': basic_cards
-                })
+        basic_cards = BasicCard.objects.filter(
+            category=category, visible=True)
+        processed_cards = []
 
-            if cat_item['type'] == 'collections':
-                cat_cards.append({
-                    'type': 'collections',
-                    'collections': cat_item['collections'],
-                })
+        if category.extras and category.extras.get('basic_card_order'):
+            for code in category.extras.get('basic_card_order'):
+                processed_cards = [{
+                    'id': card.id,
+                    'code': card.code,
+                    'phrase': get_english_text(card.phrase),
+                    'cover_url': card.cover_url,
+                    'type': 'basic'
+                } for card in basic_cards.filter(code__in=code)]
 
-            if cat_item['type'] == 'cluster_cards':
-                cluster_cards = []
-                for code in cat_item['card_codes']:
-                    card = get_cover_cluster_card_by_code(code)
-                    cluster_cards.append(card)
-                cat_cards.append({
-                    'type': 'cluster_cards',
-                    'cluster_cards': cluster_cards
-                })
+                if len(processed_cards) > 0:
+                    cluster_cards = ClusterCard.objects.filter(
+                        category=category)
+                    processed_cluster_cards = [{
+                        'id': card.id,
+                        'code': card.code,
+                        'cover_url': card.cover_url,
+                        'type': 'cluster'
+                    } for card in cluster_cards]
+                    category_cards_list.append({
+                        'category': category.name,
+                        'cards': processed_cards,
+                        'cluster_cards': processed_cluster_cards
+                    })
+        else:
+            processed_cards = [{
+                'id': card.id,
+                'code': card.code,
+                'phrase': get_english_text(card.phrase),
+                'cover_url': card.cover_url,
+                'type': 'basic'
+            } for card in basic_cards]
 
-        if len(cat_cards) > 0:
-            category_cards_list.append({
-                'category': category.name,
-                'blocks': cat_cards,
-            })
+            if len(processed_cards) > 0:
+                cluster_cards = ClusterCard.objects.filter(
+                    category=category)
+                processed_cluster_cards = [{
+                    'id': card.id,
+                    'code': card.code,
+                    'cover_url': card.cover_url,
+                    'type': 'cluster'
+                } for card in cluster_cards]
+                category_cards_list.append({
+                    'category': category.name,
+                    'cards': processed_cards,
+                    'cluster_cards': processed_cluster_cards
+                })
 
     return Response(category_cards_list, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
 @track_and_report
-def card_detail_view(request, identifier):
+def card_detail_view(request, card_id):
     card_type = request.GET.get('card_type', None)
     lang_code = request.GET.get('lang', None)
     device_id = request.GET.get('device_id', None)
 
+    card = None
+
+    if card_type == 'basic' and lang_code:
+        card = get_basic_card(card_id, lang_code)
+
+    if card_type == 'cluster' and lang_code:
+        card = get_cluster_card(card_id, lang_code)
+
+    if card_type == 'custom' and device_id:
+        card = get_custom_card(card_id)
+
+    if not card:
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(card, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@track_and_report
+def find_card_id(request):
+    card_code = request.GET.get('card_code', None)
+
     try:
-        identifier = int(identifier)
-        card = get_custom_card_by_id(identifier)
-        if card is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response(card, status=status.HTTP_200_OK)
-    except ValueError:
-        if card_type == 'cluster' and lang_code:
-            card = get_cluster_card_by_code(identifier, lang_code)
-        elif card_type == 'basic' and lang_code:
-            card = get_basic_card_by_code(identifier, lang_code)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        card = BasicCard.objects.get(
+            code=card_code,
+            status=StatusModel.ACTIVE,
+        )
+    except BasicCard.DoesNotExist:
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
 
-        if card is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        return Response(card, status=status.HTTP_200_OK)
+    return Response(card.id, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

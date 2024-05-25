@@ -29,13 +29,17 @@ def track_and_report(func, log_params=True):
             except json.JSONDecodeError:
                 params = request.POST.dict()
             except Exception as e:
-                logger.critical(f'Error al decodificar parámetros: {str(e)}')
+                logger.critical(f'Error al decodificar parametros: {str(e)}')
                 params = {}
 
             logger.info(f'[{request_id}] params: {params}')
 
         try:
-            return func(request, *args, **kwargs)
+            # return func(request, *args, **kwargs)
+            response = func(request, *args, **kwargs)
+            status_code = response.status_code
+            logger.info(f'[{request_id}] Status code: {status_code}')
+            return response
         except Exception as e:
             logger.critical(
                 f'[{request_id}] {func.__name__}: {str(e)}', exc_info=True)
