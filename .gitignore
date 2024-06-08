@@ -145,3 +145,4 @@ GitHub.sublime-settings
 /backend/models
 /nginx/prod.conf
 /certs
+/backend/labs

@@ -155,8 +155,6 @@ MEDIA_ROOT = '/media/'
 MEDIA_URL = 'media/'
 
 SITE_DOMAIN = os.getenv('SITE_DOMAIN')
-API_URL = SITE_DOMAIN + '/api/v1'
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

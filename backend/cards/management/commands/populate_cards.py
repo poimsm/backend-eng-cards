@@ -93,6 +93,7 @@ class Command(BaseCommand):
         category = Category(
             name=category_data['name'],
             code=category_data['code'],
+            tab_height=category_data['tab_height'],            
             cards=category_cards,
             extras=category_data.get('extras', None),
         )

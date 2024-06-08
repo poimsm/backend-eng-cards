@@ -27,7 +27,7 @@ def app_update_check_view(request):
     app_info = get_mobile_app_info()
 
     data = {
-        'update_required': app_info['current_app_version'] != request.app_version,
+        'update_required': app_info['current_version'] != request.app_version,
     }
 
     return Response(data, status=status.HTTP_200_OK)

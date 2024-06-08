@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
                 console.info('Populating setting: ' + setting_type)
 
-                if setting_type == 'language_settings':
+                if setting_type == 'languages_settings':
                     self.create_lang_setting(setting)
                 else:
                     self.create_setting(setting)

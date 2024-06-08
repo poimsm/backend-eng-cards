@@ -5,7 +5,6 @@ import logging
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from django.db import transaction
 from django.db import connections
 from django.db.utils import OperationalError
 
@@ -31,7 +30,6 @@ from common.decorators import track_and_report
 
 # Services
 from cards.services import (
-    get_english_text,
     get_cluster_card_by_code,
     get_basic_card_by_code,
     get_custom_card_by_id,
@@ -45,7 +43,7 @@ from devices.services import (
 )
 
 from global_settings.services import (
-    get_card_settings,
+    get_cards_settings,
 )
 
 logger = logging.getLogger('api_v1')
@@ -193,7 +191,7 @@ def category_card_list_view(request):
         })
 
     categories = Category.objects.filter(status=StatusModel.ACTIVE)
-    card_settings = get_card_settings()
+    card_settings = get_cards_settings()
 
     sorted_categories = []
     for sort_code in card_settings.extras['category_order']:
@@ -234,7 +232,8 @@ def category_card_list_view(request):
 
         if len(cat_cards) > 0:
             category_cards_list.append({
-                'category': category.name,
+                'name': category.name,
+                'tab_height': category.tab_height,
                 'blocks': cat_cards,
             })
 
