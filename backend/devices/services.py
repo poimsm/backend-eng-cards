@@ -1,10 +1,20 @@
-# services.py
-
 from devices.models import (
     Device, 
     Profile, 
     ScreenFlow,
 )
+
+from common.models import Status as StatusModel
+
+
+def validate_device(device_id):
+    try:
+        Device.objects.get(id=device_id, status=StatusModel.ACTIVE)
+        return True
+    except Device.DoesNotExist:
+        return False
+    except:
+        return False
 
 
 def create_device():
@@ -26,7 +36,7 @@ def delete_device(device_id):
 
 def get_device_by_id(device_id):
     try:
-        return Device.objects.get(id=device_id)
+        return Device.objects.get(id=device_id, status=StatusModel.ACTIVE)
     except Device.DoesNotExist:
         return None
 

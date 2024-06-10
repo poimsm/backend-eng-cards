@@ -18,7 +18,10 @@ from common.decorators import track_and_report
 
 # Services
 from devices.services import (
-    create_device, get_device_by_id)
+    create_device,
+    get_device_by_id,
+    validate_device,
+)
 
 logger = logging.getLogger('api_v1')
 
@@ -54,3 +57,12 @@ def device_create_view(request):
     device_id = create_device()
     logger.info(f'[{request.request_id}] device_id: {device_id}')
     return Response({'device_id': device_id}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@track_and_report
+def device_validate_view(request):
+    device_id = request.data.get('device_id', None)
+    is_valid = validate_device(device_id)
+    logger.info(f'[{request.request_id}] is_valid: {is_valid}')
+    return Response({'is_valid': is_valid}, status=status.HTTP_201_CREATED)

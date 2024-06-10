@@ -50,6 +50,7 @@ PROJECT_APPS = [
     'global_settings',
     'devices',
     'cards',
+    'general',
 ]
 
 THIRD_PARTY_APPS = [
@@ -82,7 +83,8 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # 'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'general/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

@@ -10,6 +10,9 @@ class AppVersionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path.startswith('/general/'):
+            return self.get_response(request)
+        
         version = request.headers.get('App-Version')
         if not version:
             return HttpResponseBadRequest("APP version is required.")

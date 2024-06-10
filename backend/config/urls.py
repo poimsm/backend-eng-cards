@@ -22,4 +22,5 @@ urlpatterns = [
     path('user/', include('users.urls', namespace='user')),
     path('devices/', include('devices.urls', namespace='devices')),
     path('global-settings/', include('global_settings.urls', namespace='global_settings')),
+    path('general/', include('general.urls', namespace='general')),
 ]
