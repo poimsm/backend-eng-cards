@@ -32,7 +32,9 @@ def get_languages_info():
 
 def list_languages():
     data = GlobalSetting.objects.get(type='languages_settings')
-    return data.extras['languages']
+    languages = data.extras['languages']
+    sorted_languages = sorted(languages, key=lambda x: x['name'])
+    return sorted_languages
 
 
 def get_mobile_app_info():
